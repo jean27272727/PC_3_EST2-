@@ -1,0 +1,158 @@
+---
+title: "PC3_2"
+output: html_document
+date: '2022-06-29'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+
+library(rio)
+library(Rmisc)
+library (stargazer)
+library(moments)
+library(DescTools)
+library(BBmisc)
+library(cluster)
+library(factoextra)
+library(tidyverse)
+library(dplyr)
+library(stringr)
+library(rio)
+library(htmltab)
+library(rvest)
+library(stringr)
+library(readr)
+```
+
+**REPOSITORIO GITHUB: https://github.com/jean27272727/PC_3_EST2-.git**
+#Parte II: Elaboración del reporte 
+
+
+```{r}
+
+
+Reporte_Final=import("https://github.com/jean27272727/PC_3_EST2-/blob/6436f292557f9ec63486cf65985a0bc3345a157d/Reporte.csv?raw=true", encoding="UTF-8", stringsAsFactors = F)
+# eliminamos fila del año
+
+Reporte_Final= Reporte_Final[,-2]
+#Convertimos a numericas
+Reporte_Final$`Emision Oxido Nitroso`= as.numeric(Reporte_Final$`Emision Oxido Nitroso`)
+Reporte_Final$`Emicion Metano`= as.numeric(Reporte_Final$`Emicion Metano`)
+str(Reporte_Final)
+```
+## Introducccion
+
+El presente trabajo pretende informar descriptivamente sobre un conjunto de indicadores: Emision de CO2, Emision de metano, Emision de oxido nitroso(del año 2017) y el IDH (del año 2019). Con el objetivo de Describir la situacion de España- en conjunto con los indicadores propuesto- con el resto del mundo. En este sentido, se procede a explicar los indicadores. En primer lugar, la Emision de CO2, se miden a partir de los derivados de la quema de combustible fósil y la fabricacion de cemento. En segundo lugar, las emiciones de metano, se miden a partir de los derivados de actividades humanas como la agricultura y de la produccion industrial de metano; ademas, se calcula en relacion a kt quivalenten al C02. En tercer lugar, las emisiones de oxido nitroso, de miden a partir de las emisiones de la quema de biomasa agricola, actividades industriales y manejo de ganado; ademas, se calcula a partir de toneladas métricas de Co2 equivalente . Por ultimo, el IDH se calcula como una media geométrica de medias geométricas para cada dimensión por separado. El IDH-D da cuenta de las desigualdades en las dimensiones del IDH ajustando el valor promedio de cada dimensión según su nivel de desigualdad.
+
+
+
+
+## Tabla
+```{r}
+# creacion de la tabla del promedio de las tres variables y el IDH
+
+colMeans(Reporte_Final[,c(3:5)])
+
+```
+
+```{r}
+#Valor de los indicadores para su país asignado
+Reporte_Final[43,]
+```
+
+
+Para la creacion de la tabla es necesario primero la creacion de un nuevo valor "Caso_unico" que será de España, por tanto primero se procede a graficar para que despues se pueda crear la tabla. 
+
+
+##Gráficos
+```{r}
+#a.	La relación entre el IDH y uno de los indicadores elegidos del Banco Mundial
+Reporte_Final= mutate(Reporte_Final, Caso_unico= ifelse(Pais== "España", 1,0))
+Reporte_Final$Caso_unico= factor(Reporte_Final$Caso_unico)
+
+p=ggplot(Reporte_Final, aes(x=IDH_2019, y=`Emision Oxido Nitroso`)) + geom_point() +
+geom_point(size=1.3, shape=23) +
+geom_text(label=Reporte_Final$Pais, vjust=-0.5, hjust = 1,color="black", size=3) +
+labs(title = "Indice de Desarrollo Humano en relacion al nivel de emicion de Co2",
+subtitle = "2019,2017",
+x = "Indice de Desarrollo Humano",
+y = "Nivel de emicion de Co2")
+p
+```
+Por el grafico se puede comprobar que no existe una relacion en la mayoria de paises, entre el Indice de Desarrollo humano del 2019 y la emision de oxido nitroso del año 2017. En tanto, se puede decir que India, China, Brasil, Indonesia y Estados Unidos pueden presentar una relacion directa. Ademas, en el caso especifico del país brindado para el analisis: España, se puede decir que no presenta ningun tipo de relacion entre la emision de oxido nitroso y el IDH. 
+
+
+
+```{r}
+
+# Retomando el punto anterior de la tabla y el grafico, una vez creado el valor : España se procede a realizar la tabla 
+
+Tabla_final= as.data.frame(Reporte_Final %>%
+  group_by(Caso_unico) %>%
+  summarize(Mean_Emision_Metano= mean(`Emicion Metano`, na.rm= TRUE), Mean_Emision_Dioxido_Nitroso= mean(`Emision Oxido Nitroso`, na.rm= TRUE), Mean_IDH= mean( IDH_2019, na.rm= TRUE)))
+
+```
+
+```{r}
+Tabla_final$Caso_unico = factor(Tabla_final$Caso_unico, levels = c(0:1), labels = c("Mundo", "España"))
+Tabla_final
+```
+Segun la tabla mostrada, en promedio, en el mundo la emision de metano es de 44220 KT, el de dioxido nitroso es de 18270.07 kt y, mientras, el indice de desarrolllo humano es de 0,736. Ademas, el país seleccionado: España, presenta una emicion de metano de 39600 kt, que es menor al promedio del mundo. En tanto la emision de oxido nitroso supera al promedio mundial: 20140.00 kt ademas del IDH: 0,904. 
+
+
+```{r fig.height=13, fig.width=8}
+#b.	La distribución de países según la variable ordinal: Emicion de c02
+ggplot(Reporte_Final, aes(x=reorder(Pais,`Emicion Co2`), y=`Emicion Co2`)) +
+geom_bar(stat = "identity") +
+coord_flip()+
+labs(title = "Distribución de países según la emision de CO2 ",
+subtitle = "Emision co2",
+x = " ",
+y = "Escala 0 - 3")
+```
+##Categorias en Kilotones para el caso de emision de CO2
+Escala de 0-1 (-3.33e+04,3.71e+06] = 140 
+Escala de 1-2(3.71e+06,7.41e+06) = 1
+Escala de 2-3  (7.41e+06,1.11e+07]  = 1
+                                
+Segun el gráfico:
+
+La mayoria de paises no sepera la escala 1. En tanto, solo dos superan dicha escala, China presenta una escala 3 y Estados Unidos presenta una escala 2. Mientras que el pais brindado por el presenta trabajo: España, presenta una escala 1. 
+```{r}
+# c.La densidad de emicion de metano elegidos del Banco Mundial. 
+ggplot(Reporte_Final, aes(x=`Emicion Metano`, fill=`Emision Metano`)) + theme(legend.position="bottom") +
+geom_density(alpha=0.6, color="red", fill="red", linetype = "dashed")
+```
+```{r fig.height=18, fig.width=8}
+#gráfico libre 
+library(ggthemes)
+ggplot(Reporte_Final, aes(x=reorder(Pais,`Emicion Metano`), y=`Emicion Metano`)) +
+geom_bar(stat = "identity") + coord_flip()+
+labs(title = "Distribución de países según la emision de metano ",
+subtitle = "Emision Metano",
+x = " ",
+y = "Escala 0 - 1200000") +
+  
+
+  geom_text(aes(label=paste0(round(`Emicion Metano`,4)/10000,"%")), vjust=0.3, hjust = 1.3, color="orange", size=1.9) +
+
+    geom_hline(yintercept = mean(Reporte_Final$`Emicion Metano`) ,linetype="dashed", color="blue",size=1) +
+
+  scale_color_fivethirtyeight() +
+  
+  theme_fivethirtyeight()
+
+```
+Según el grafico:
+
+Por una parte, China supera el porcentaje maximo del mundo en emiciones de metano con un 124% (superior a 1200000 kt) aproximadamente y Kiribati se aproxima al minimo con 0,02%. Por otra parte,   España emite un 4% de metano que es menos que el promedio mundial: 44220. 
+
+## Reporte de conclusiones 
+
+Segun los analisis y graficos presentados (del año 2017) se concluye lo siguiente, en primer lugar, que España, no presenta ningun tipo de relacion (directa o inversa) entre la emision de oxido nitroso y el IDH, por lo cual no es necesario basar un analisis y/o trabajo en conjunto de ambas varaibles para una posible disminucion o aumento de algunas de ellas. En segundo lugar, España presenta una emision de metano de 39600 kt en el año 2017, que es menor al promedio del mundo; por lo cual, España, estaria contaminando menos que los otros paises que estan en el promedio o superan el promedio. En este sentido, la situacion del pais en relacion a dicha variable, estaria, en promedio, mejor que los demas paises. En tercer lugar, presenta la escala 1 en terminos de emicion de Co2 (kt), indica que a lo mucho produjo3710000 kt de co2 en el año 2017. En cuarto lugar, en terminos de densidad, la emision de metano del año 2017 es menor a 10 000 y su punto maximo se encuentra cercano a cero. Por ultimo,España emite un 4% de metano, lo que es menor al promedio mundial: 44220. 
+
+

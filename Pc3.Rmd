@@ -1,0 +1,311 @@
+---
+title: "Pc 3"
+output: html_document
+date: '2022-06-27'
+---
+
+```{r}
+
+library(rio)
+library(Rmisc)
+library (stargazer)
+library(moments)
+library(DescTools)
+library(BBmisc)
+library(cluster)
+library(factoextra)
+library(tidyverse)
+library(dplyr)
+library(stringr)
+library(rio)
+library(htmltab)
+library(rvest)
+library(stringr)
+library(readr)
+
+
+```
+**REPOSITORIO GITHUB: https://github.com/jean27272727/PC_3_EST2-.git**
+
+
+
+
+#Parte I: Construcción de la base de datos 
+
+
+```{r}
+#data1: Emisiones de CO2 (kt)
+CO2 =import("https://github.com/jean27272727/PC_3_EST2-/blob/1d150e211c46e81611a45f882912c790c65ac544/EmicionCo2_4151512.csv?raw=true")
+```
+
+```{r}
+#Reconfiguracion
+export(CO2, "CO2.csv")
+CO2= import("CO2.csv", encoding = "UTF-8")
+```
+
+```{r}
+#borrar datos perdidos
+
+
+CO2.1= CO2 %>% select(V1, V62)
+
+```
+
+```{r message=FALSE, echo=FALSE, include=FALSE}
+str(CO2.1)
+```
+
+```{r}
+CO2.1= na.omit(CO2.1)
+
+```
+
+```{r}
+#Eliminamos filas
+  colnames(CO2.1) = c("Pais","Emicion Co2")
+CO2.1 =CO2.1[-c(1),]
+CO2.1 =CO2.1[-c(1:3),]
+
+CO2.1$AÑO= 2017
+
+```
+```{r}
+#reseteamos
+row.names(CO2.1) = NULL
+
+
+
+```
+
+```{r}
+#exportamos
+export(CO2.1,"CO2.1.csv")
+```
+
+
+
+```{r}
+#data2: Emisiones de metano (kt de equivalente de CO2)
+
+
+Metano= import("https://github.com/jean27272727/PC_3_EST2-/blob/1d150e211c46e81611a45f882912c790c65ac544/EmicionMetano.csv?raw=true")
+
+```
+
+```{r}
+
+export(Metano, "Metano.csv")
+Metano= import("Metano.csv", encoding = "UTF-8")
+```
+
+```{r}
+#borrar datos perdidos
+
+Metano1= Metano %>% select(V1, V62)
+
+```
+
+```{r}
+Metano1= na.omit(Metano1)
+
+```
+
+```{r}
+#Eliminamos filas
+colnames(Metano1) = c("Pais","Emicion Metano")
+Metano1 =Metano1[-c(1),]
+Metano1 =Metano1[-c(1:3),]
+
+Metano1$AÑO= 2017
+```
+
+```{r}
+#reseteamos
+row.names(Metano1) = NULL
+```
+
+```{r}
+#Data 3: Emisiones de óxido nitroso (miles de toneladas métricas de equivalente de CO2)
+OxidoNitroso= import("https://github.com/jean27272727/PC_3_EST2-/blob/1d150e211c46e81611a45f882912c790c65ac544/EmicionOxidoNitroso.csv?raw=true")
+
+```
+
+```{r}
+
+export(OxidoNitroso, "OxidoNitroso.csv")
+OxidoNitroso= import("OxidoNitroso.csv", encoding = "UTF-8")
+```
+
+```{r}
+#borrar datos perdidos
+
+OxidoNitroso1= OxidoNitroso %>% select(V1, V62)
+
+```
+
+```{r}
+OxidoNitroso1= na.omit(OxidoNitroso1)
+
+```
+
+```{r}
+#Eliminamos filas
+colnames(OxidoNitroso1) = c("Pais","Emision Oxido Nitroso")
+OxidoNitroso1 =OxidoNitroso1[-c(1),]
+OxidoNitroso1 =OxidoNitroso1[-c(1:3),]
+
+OxidoNitroso1$AÑO= 2017
+```
+
+```{r}
+#reseteamos
+row.names(OxidoNitroso1) = NULL
+```
+
+```{r}
+OxidoNitroso1$AÑO= 2017
+```
+
+```{r}
+
+Union=merge(CO2.1,Metano1,all=TRUE)
+
+Union_Final=merge(Union,OxidoNitroso1,all=TRUE)
+```
+# Primer Join
+
+Se utiliza el Outer join: 
+
+El outer join, o unión completa, combina todas las columnas de ambos conjuntos de datos en uno para todos los elementos. Es por ello que este "join" es adecuado porque permite tener una vision completa del conjunto de emición de elementos contaminantes en su conjunto: Metano, Co2 y Oxido nitroso. 
+```{r}
+numBreaks=nclass.Sturges(na.omit(Union_Final$`Emicion Co2`))
+labels=c("1","2","3","4","5","6","7","8","9")
+Union_Final$`Emicion Co2` = cut(Union_Final$`Emicion Co2`,breaks = numBreaks,labels, oredered_result = T)
+table(Union_Final$`Emicion Co2`)
+
+#Categorias
+#(-3.33e+04,3.71e+06]  (3.71e+06,7.41e+06]  (7.41e+06,1.11e+07]  (1.11e+07,1.48e+07] 
+                 #217                    5                    2                    6 
+ #(1.48e+07,1.85e+07]  (1.85e+07,2.22e+07]  (2.22e+07,2.59e+07]  (2.59e+07,2.96e+07] 
+                 #  1                    4                    0                    0 
+ #(2.96e+07,3.34e+07] 
+                 #  1 
+
+#Justificacion de la particion:
+
+```
+
+
+#Índice de Desarrollo Humano 2019 
+```{r}
+
+link_IDH = "https://datosmacro.expansion.com/idh"
+pagina_web=read_html(link_IDH)
+pagina_web
+css_IDH="tr"
+IDH_html = html_nodes(pagina_web,css_IDH)
+IDH_texto = html_text(IDH_html)
+head(IDH_texto)
+#se convierte a un data frame 
+data_IDH=data.frame(IDH_texto)
+head(data_IDH)
+
+
+```
+
+# LIMPIEZA Y ORDENAMIENTO
+
+```{r}
+names(data_IDH)
+```
+
+```{r}
+#Eliminacion de la primera fila por la necesidad del metodo de particion
+data_IDH=data_IDH[-1,]
+```
+
+```{r}
+#Nueva data frame
+data_IDH=data.frame(data_IDH)
+```
+
+## Pais
+```{r}
+# se realiza la priemra particion y se crea a variable pais. 
+data_IDH$Pais=str_split(data_IDH$data_IDH,"[+]",simplify = T)[,1]
+
+#Se elimina el caracter "[" 
+data_IDH$Pais=gsub("[[:punct:]]","",data_IDH$Pais)
+
+#Se borra el espacio en blanco dejado al final.
+data_IDH$Pais =trimws(data_IDH$Pais,which=c("right"),whitespace = "[\\h\\v]")
+```
+
+```{r}
+#Segunda particion para obtener los datos de IDH, variacion y ranking 
+data_IDH$particion2=str_split(data_IDH$data_IDH,"]",simplify = T)[,2]
+```
+## IDH
+```{r}
+#Se obtiene los cinco primero caracreres de la segunda particion.   
+data_IDH$IDH_2019=substr(data_IDH$particion2,1,5)
+ 
+data_IDH$IDH_2019=gsub(",",".",data_IDH$IDH_2019)
+```
+# VARIACIÓN
+```{r}
+#Se hace una última partición del vector partición 2 para sacar el ranking y variación:
+data_IDH$Variacion=str_split(data_IDH$particion2,"º",simplify = T)[,2]
+```
+## RANKING
+```{r}
+#se procede a partir de los caracteres 6 y 7
+data_IDH$Ranking=substr(data_IDH$particion2,6,7)
+data_IDH$Ranking=gsub("º","",data_IDH$Ranking)
+```
+
+
+
+**SE DEBE CONSIDERAR, SIN EMBARGO, PARA LOS MOTIVOS DE ESTE TRABAJO, SOLO SE CONSIDERARAN LAS VARIABLES DE Pais E IDH, POR LO QUE SE ELIMINAN LAS DEMÁS**
+
+```{r}
+data_IDH=data_IDH[,c(2,4)]
+head(data_IDH)
+```
+**Estructura de la data 2019**
+
+
+```{r}
+#Se convierte a variable numérica
+data_IDH$IDH_2019=as.numeric(data_IDH$IDH_2019)
+```
+
+
+# MERGE DE LA BASE DE LAS BASES DE DATOS
+
+```{r}
+Reporte=merge(Union_Final,data_IDH, all.X = TRUE)
+head(Reporte)
+```
+
+#Segundo join
+se eligio el metodo left join porque en terminos generales ya se habia limpiado la datas anteriores de las cuales se tenia la informacion completa, por lo que al agregar el IDH no se hubieran agregado lso valores perdidos antes eliminados. 
+
+
+```{r}
+str(Reporte)
+summary(Reporte)
+
+
+```
+
+```{r}
+#Se exportan las datas 
+export(Reporte,"Reporte.csv")
+export(Union_Final,"Union_Final.csv")
+export(data_IDH,"Data_IDH.csv")
+```
+
+
+
